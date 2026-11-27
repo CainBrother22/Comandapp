@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0b0f19" />
+    <title>ComandAPP - POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- PANTALLA DE ACTIVACIÓN -->
+    <div id="pantalla-activacion"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); z-index: 10000; align-items: center; justify-content: center; flex-direction: column; padding: 20px;">
+        <h1 style="color: var(--accent); margin-bottom: 20px;">ComandAPP<span style="color:white">.</span></h1>
+        <div class="panel-completo" style="max-width: 400px; text-align: center;">
+            <h2>Activación Requerida</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">Ingrese su clave de producto de
+                10 dígitos para desbloquear la aplicación.</p>
+            <input type="text" id="input-key" placeholder="Activation Key" maxlength="10"
+                style="text-align: center; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 15px;"
+                inputmode="text" />
+            <button type="button" id="btn-activar-sistema" class="btn-primary">Activar Sistema</button>
+            <p id="error-key" style="color: var(--danger); margin-top: 10px; display: none; font-size: 0.85rem;">Clave
+                inválida. Deben ser 10 dígitos exactos.</p>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <div class="brand-section">
+                <h1>ComandAPP<span style="color: var(--accent)">.</span></h1>
+            </div>
+            <div class="tasa-header-box">
+                <label for="tasaBcv">Tasa BCV</label>
+                <div class="input-icon-wrapper" style="display: flex; gap: 6px; align-items: center;">
+                    <input type="number" id="tasaBcv" placeholder="36.45" step="0.01" inputmode="decimal"
+                        style="width: 80px;" />
+                    <button type="button" id="btn-actualizar-tasa" title="Traer tasa automática del BCV" style="
+            background: var(--accent);
+            color: var(--bg-body);
+            border: none;
+            border-radius: 6px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+            white-space: nowrap;
+        ">
+                        🔄 BCV
+                    </button>
+                </div>
+            </div>
+            <button type="button" id="btn-menu-toggle" aria-label="Abrir menú de navegación">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div id="overlay"></div>
+
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h2>Navegación</h2>
+            <button type="button" id="btn-cerrar-sidebar" class="btn-cerrar">✕</button>
+        </div>
+        <div class="sidebar-content">
+            <nav class="nav-sidebar">
+                <button type="button" class="btn-nav activo" data-vista="vista-caja">
+                    <span class="nav-icon">🛒</span> Terminal de Caja
+                </button>
+                <button type="button" class="btn-nav" data-vista="vista-historial">
+                    <span class="nav-icon">📜</span> Historial de Ventas
+                </button>
+                <button type="button" class="btn-nav" data-vista="vista-config">
+                    <span class="nav-icon">⚙️</span> Configuración
+                </button>
+            </nav>
+        </div>
+    </aside>
+
+    <main>
+        <!-- VISTA CAJA -->
+        <div id="vista-caja" class="vista">
+            <section id="menu">
+                <div class="section-header">
+                    <h2>Categorías y Productos</h2>
+                    <p class="subtitle">Filtra por categoría o busca un producto para agregarlo</p>
+                </div>
+
+                <!-- Pestañas horizontales de categorías -->
+                <div id="tabs-categorias" class="tabs-categorias" role="tablist"></div>
+
+                <!-- Buscador rápido de productos -->
+                <div class="buscador-menu-box">
+                    <input type="text" id="busqueda-menu" placeholder="Buscar producto..." autocomplete="off" />
+                </div>
+
+                <div id="contenedor-productos"></div>
+            </section>
+
+            <section id="cuenta">
+                <div class="section-header">
+                    <h2>Orden Actual</h2>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px">
+                    <label for="nombre-cliente">Identificación de la Comanda / Cliente</label>
+                    <input type="text" id="nombre-cliente" placeholder="Ej: Mesa 4 / Carlos" autocomplete="off" />
+                </div>
+                <div class="form-group" style="margin-bottom: 15px">
+                    <label for="notas-orden">📝 Notas / Modificaciones</label>
+                    <textarea id="notas-orden" rows="2"
+                        placeholder="Ej: Sin cebolla, Salsa aparte, Para llevar..."></textarea>
+                </div>
+
+                <div class="acciones-espera-bar">
+                    <button type="button" id="btn-pausar-orden" class="btn-secundario">⏳ Pausar / Esperar</button>
+                    <button type="button" id="btn-ver-espera" class="btn-secundario">📝 En Espera (0)</button>
+                </div>
+
+                <div class="orden-container">
+                    <ul id="lista-orden">
+                        <li class="empty-state"><em>Sin productos en la orden</em></li>
+                    </ul>
+                </div>
+
+                <hr class="divider" />
+
+                <div class="totales-caja">
+                    <div class="total-row main-total">
+                        <span>Total USD</span>
+                        <span>$<span id="total-usd">0.00</span></span>
+                    </div>
+                    <div class="total-row sub-total">
+                        <span>Total VES</span>
+                        <span>Bs.<span id="total-bs">0.00</span></span>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-cobrar" class="btn-primary">Procesar Cobro</button>
+            </section>
+        </div>
+
+        <!-- Barra rápida flotante en móvil para ir a la orden actual sin scroll largo -->
+        <div id="barra-orden-movil" class="barra-orden-movil">
+            <div class="barra-movil-info">
+                <span id="barra-movil-items" class="barra-movil-items">0 ítems</span>
+                <strong id="barra-movil-total" class="barra-movil-total">$0.00 · Bs.0.00</strong>
+            </div>
+            <button type="button" id="btn-ir-orden" class="btn-primary btn-ir-orden">Ver Orden</button>
+        </div>
+
+        <!-- VISTA HISTORIAL (Sin totales globales históricos; conserva totales semanales y diarios) -->
+        <div id="vista-historial" class="vista oculto">
+            <section class="panel-completo">
+                <div class="section-header">
+                    <h2>Historial de Operaciones</h2>
+                    <p class="subtitle">Totales resumidos por semana y por día</p>
+                </div>
+
+                <div class="filtros-historial">
+                    <button type="button" class="btn-filtro activo" data-filtro="todos">
+                        Todas
+                    </button>
+                    <button type="button" class="btn-filtro" data-filtro="credito">
+                        Crédito
+                    </button>
+                    <button type="button" class="btn-filtro" data-filtro="pagado">
+                        Al Contado
+                    </button>
+                </div>
+
+                <div id="contenedor-historial"></div>
+
+                <div class="danger-zone">
+                    <button type="button" id="btn-borrar-historial" class="btn-outline-danger">
+                        Eliminar Historial Completo
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- VISTA CONFIGURACIÓN (Listas compactas con scroll acotado, filtro y edición) -->
+        <div id="vista-config" class="vista oculto">
+            <section class="panel-completo">
+                <div class="section-header-inline">
+                    <h2>Gestión de Categorías</h2>
+                    <span id="badge-conteo-categorias" class="badge-conteo">0</span>
+                </div>
+                <div class="formulario-lineal">
+                    <input type="text" id="nueva-categoria-input" placeholder="Ej: Bebidas Premium" />
+                    <button type="button" id="btn-agregar-categoria" class="btn-secundario">
+                        Añadir Categoría
+                    </button>
+                </div>
+                <div class="contenedor-scroll-acotado">
+                    <ul id="lista-categorias-editable" class="lista-edicion"></ul>
+                </div>
+            </section>
+
+            <section class="panel-completo">
+                <div class="section-header-inline">
+                    <h2>Catálogo de Productos</h2>
+                    <span id="badge-conteo-productos" class="badge-conteo">0</span>
+                </div>
+                <div class="formulario-grid">
+                    <input type="text" id="nuevo-nombre" placeholder="Nombre del producto" />
+                    <input type="number" id="nuevo-precio" placeholder="Precio ($)" step="0.01" inputmode="decimal" />
+                    <select id="nueva-categoria"></select>
+                    <button type="button" id="btn-agregar-producto" class="btn-secundario">
+                        Agregar al Catálogo
+                    </button>
+                </div>
+
+                <h3 class="subsection-title">Inventario Activo</h3>
+                <div class="barra-filtro-inventario">
+                    <input type="text" id="filtro-inventario-texto" placeholder="Filtrar por nombre..." />
+                    <select id="filtro-inventario-categoria">
+                        <option value="TODAS">Todas las categorías</option>
+                    </select>
+                </div>
+
+                <div class="contenedor-scroll-acotado">
+                    <ul id="lista-menu-editable" class="lista-edicion"></ul>
+                </div>
+            </section>
+
+            <div class="config-grid">
+                <section class="panel-completo config-card">
+                    <div class="section-header">
+                        <h2>📦 Respaldo de Menú</h2>
+                        <p class="subtitle">
+                            Sincroniza y respalda tu catálogo de productos y categorías.
+                        </p>
+                    </div>
+                    <div class="grupo-backup">
+                        <button type="button" id="btn-exportar-menu" class="btn-backup btn-outline">
+                            ⬇️ Exportar
+                        </button>
+                        <button type="button" id="btn-importar-menu" class="btn-backup btn-fill">
+                            ⬆️ Importar
+                        </button>
+                        <input type="file" id="input-importar-menu" accept=".json" style="display: none" />
+                    </div>
+                </section>
+
+                <section class="panel-completo config-card">
+                    <div class="section-header">
+                        <h2>📜 Respaldo de Transacciones</h2>
+                        <p class="subtitle">
+                            Respalda el historial de ventas. Detecta duplicados automáticamente.
+                        </p>
+                    </div>
+                    <div class="grupo-backup">
+                        <button type="button" id="btn-exportar-historial" class="btn-backup btn-outline">
+                            ⬇️ Exportar
+                        </button>
+                        <button type="button" id="btn-importar-historial" class="btn-backup btn-fill">
+                            ⬆️ Importar
+                        </button>
+                        <input type="file" id="input-importar-historial" accept=".json" style="display: none" />
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL DE PAGO RÁPIDO -->
+    <div id="modal-pago" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Procesar Pago</h2>
+                <button type="button" class="btn-close-modal">✕</button>
+            </div>
+
+            <div id="modal-detalle-orden" class="detalle-orden-modal"></div>
+
+            <div id="modal-descuento" class="modal-seccion-gris">
+                <label for="input-descuento">Aplicar Descuento</label>
+                <div class="input-group">
+                    <input type="number" id="input-descuento" placeholder="0.00" step="0.01" inputmode="decimal" />
+                    <select id="tipo-descuento">
+                        <option value="PORCENTAJE">% Porcentaje</option>
+                        <option value="USD">$ Dólares</option>
+                        <option value="BS">Bs Bolívares</option>
+                    </select>
+                </div>
+                <div class="total-final-box">
+                    <span>Total a Pagar</span>
+                    <div class="total-final-amounts">
+                        <span class="usd-amount">$<span id="modal-total-final-usd">0.00</span></span>
+                        <span class="bs-amount">Bs.<span id="modal-total-final-bs">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-credito" class="checkbox-group">
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="chk-credito" />
+                    <span class="checkmark"></span>
+                    Registrar venta a crédito (Pago diferido)
+                </label>
+            </div>
+
+            <div id="modal-botones-pago" class="botones-accion-modal">
+                <button type="button" id="btn-pagar-efectivo" class="btn-metodo btn-efectivo">
+                    💵 Efectivo
+                </button>
+                <button type="button" id="btn-pagar-movil" class="btn-metodo btn-movil">
+                    📱 Pago Móvil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA DIVIDIR PAGO -->
+    <div id="modal-dividir-pago" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Distribuir Fondos</h2>
+                <button type="button" class="btn-close-modal">✕</button>
+            </div>
+
+            <div id="modal-detalle-dividir" class="detalle-orden-modal"></div>
+
+            <div class="modal-seccion-gris">
+                <label>Ajuste de Descuento</label>
+                <div class="input-group">
+                    <input type="number" id="dividir-input-descuento" placeholder="0.00" step="0.01"
+                        inputmode="decimal" />
+                    <select id="dividir-tipo-descuento">
+                        <option value="PORCENTAJE">% Porcentaje</option>
+                        <option value="USD">$ Dólares</option>
+                        <option value="BS">Bs Bolívares</option>
+                    </select>
+                </div>
+                <div class="total-final-box compact">
+                    <span>Nuevo Total:</span>
+                    <strong>$<span id="dividir-total-final-usd">0.00</span> | Bs.<span
+                            id="dividir-total-final-bs">0.00</span></strong>
+                </div>
+            </div>
+
+            <div class="modal-seccion-blanca">
+                <div class="form-group">
+                    <label for="dividir-moneda-efectivo">Moneda del Efectivo</label>
+                    <select id="dividir-moneda-efectivo">
+                        <option value="USD">Dólares (USD)</option>
+                        <option value="Bs">Bolívares (VES)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dividir-efectivo">Monto en Efectivo ($)</label>
+                    <input type="number" id="dividir-efectivo" step="0.01" placeholder="0.00" inputmode="decimal" />
+                </div>
+                <div class="form-group">
+                    <label for="dividir-movil">Monto por Pago Móvil (Bs)</label>
+                    <input type="number" id="dividir-movil" step="0.01" placeholder="0.00" inputmode="decimal" />
+                </div>
+            </div>
+            <button type="button" id="btn-guardar-dividir" class="btn-primary full-width">
+                Guardar Distribución
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFLICTOS -->
+    <div id="modal-conflictos-menu" class="modal">
+        <div class="modal-content">
+            <div class="modal-header warning">
+                <h2>⚠️ Conflicto de Catálogo</h2>
+                <button type="button" class="btn-close-modal">✕</button>
+            </div>
+            <p class="modal-description" style="padding: 16px 24px 0; color: var(--text-muted);">
+                Se encontraron productos existentes en tu catálogo actual. Selecciona una acción.
+            </p>
+
+            <div id="lista-conflictos-menu" class="lista-scroll-modal"></div>
+
+            <div class="botones-accion-modal">
+                <button type="button" id="btn-omitir-conflictos" class="btn-secundario">
+                    Ignorar Duplicados
+                </button>
+                <button type="button" id="btn-reemplazar-conflictos" class="btn-primary">
+                    Sobrescribir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ÓRDENES EN ESPERA -->
+    <div id="modal-espera" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Comandas en Espera</h2>
+                <button type="button" class="btn-close-modal">✕</button>
+            </div>
+            <div id="lista-espera" class="modal-seccion-blanca"
+                style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+
+</html>
